@@ -50,7 +50,6 @@ interface Props {
   equipment: Equipment[]
   categories: { id: string; name: string }[]
   departments: { id: string; name: string }[]
-  employees: { id: string; name: string }[]
 }
 
 const statusColors: Record<string, string> = {
@@ -61,7 +60,7 @@ const statusColors: Record<string, string> = {
   lost: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 }
 
-export function EquipmentTable({ equipment, categories, departments }: Props) {
+export function EquipmentTable({ equipment, categories }: Props) {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")

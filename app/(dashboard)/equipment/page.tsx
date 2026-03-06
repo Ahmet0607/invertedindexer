@@ -20,7 +20,6 @@ export default async function EquipmentPage() {
 
   const { data: categories } = await supabase.from("categories").select("*")
   const { data: departments } = await supabase.from("departments").select("*")
-  const { data: employees } = await supabase.from("employees").select("*").eq("status", "active")
 
   return (
     <>
@@ -43,7 +42,6 @@ export default async function EquipmentPage() {
           equipment={equipment || []} 
           categories={categories || []}
           departments={departments || []}
-          employees={employees || []}
         />
       </div>
     </>
