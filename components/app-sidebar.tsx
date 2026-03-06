@@ -1,21 +1,18 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   Package,
-  ClipboardList,
   Users,
   Building2,
-  Box,
-  CreditCard,
-  UsersRound,
-  Smartphone,
-  Tags,
+  FolderOpen,
+  ClipboardList,
+  Settings,
   LogOut,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 import {
   Sidebar,
   SidebarContent,
@@ -27,55 +24,21 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
 } from "@/components/ui/sidebar"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
 
-const navItems = [
-  {
-    title: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Equipment",
-    href: "/equipment",
-    icon: Package,
-  },
-  {
-    title: "Assignments",
-    href: "/assignments",
-    icon: ClipboardList,
-  },
-  {
-    title: "Employees",
-    href: "/employees",
-    icon: Users,
-  },
-  {
-    title: "Departments",
-    href: "/departments",
-    icon: Building2,
-  },
-  {
-    title: "Categories",
-    href: "/categories",
-    icon: Tags,
-  },
-  {
-    title: "Team",
-    href: "/team",
-    icon: UsersRound,
-  },
-  {
-    title: "Pricing",
-    href: "/pricing",
-    icon: CreditCard,
-  },
-  {
-    title: "Install App",
-    href: "/install",
-    icon: Smartphone,
-  },
+const mainNavItems = [
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Equipment", href: "/equipment", icon: Package },
+  { title: "Employees", href: "/employees", icon: Users },
+  { title: "Departments", href: "/departments", icon: Building2 },
+  { title: "Categories", href: "/categories", icon: FolderOpen },
+  { title: "Assignments", href: "/assignments", icon: ClipboardList },
+]
+
+const settingsNavItems = [
+  { title: "Settings", href: "/settings", icon: Settings },
 ]
 
 export function AppSidebar() {
@@ -86,62 +49,68 @@ export function AppSidebar() {
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/auth/login")
-    router.refresh()
   }
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 px-2 py-1.5"
-        >
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Box className="size-4" />
-          </div>
-          <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
-            <span className="font-semibold">EquipTrack</span>
-            <span className="text-xs text-muted-foreground">
-              Equipment Management
-            </span>
-          </div>
+    <Sidebar>
+      <SidebarHeader className="border-b px-6 py-4">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <Package className="h-6 w-6 text-primary" />
+          <span className="text-lg font-semibold">EquipTracking</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/dashboard" && pathname.startsWith(item.href))
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
-                      <Link href={item.href}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
+              {mainNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.href}
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Account</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {settingsNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.href}
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
-              <LogOut />
-              <span>Logout</span>
+            <SidebarMenuButton onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+              <span>Log out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   )
 }

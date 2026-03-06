@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,176 +13,152 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useData } from "@/lib/store/data-context"
-import type { Employee } from "@/lib/store/types"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-interface EmployeeFormProps {
-  employee?: Employee
-  mode: "create" | "edit"
+interface Props {
+  departments: { id: string; name: string }[]
+  employee?: {
+    id: string
+    name: string
+    email: string
+    position: string
+    department_id: string | null
+    status: string
+  }
 }
 
-export function EmployeeForm({ employee, mode }: EmployeeFormProps) {
+export function EmployeeForm({ departments, employee }: Props) {
   const router = useRouter()
-  const { departments, addEmployee, updateEmployee } = useData()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const [formData, setFormData] = useState({
-    name: employee?.name || "",
-    email: employee?.email || "",
-    position: employee?.position || "",
-    departmentId: employee?.departmentId || "",
-    status: employee?.status || "active",
-  })
-
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {}
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required"
-    }
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required"
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email format"
-    }
-    if (!formData.position.trim()) {
-      newErrors.position = "Position is required"
-    }
-    if (!formData.departmentId) {
-      newErrors.departmentId = "Department is required"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setLoading(true)
+    setError(null)
 
-    if (!validate()) return
-
-    if (mode === "create") {
-      const newEmployee = addEmployee({
-        name: formData.name,
-        email: formData.email,
-        position: formData.position,
-        departmentId: formData.departmentId,
-        status: formData.status as "active" | "inactive",
-      })
-      router.push(`/employees/${newEmployee.id}`)
-    } else if (employee) {
-      updateEmployee(employee.id, {
-        name: formData.name,
-        email: formData.email,
-        position: formData.position,
-        departmentId: formData.departmentId,
-        status: formData.status as "active" | "inactive",
-      })
-      router.push(`/employees/${employee.id}`)
+    const formData = new FormData(e.currentTarget)
+    const supabase = createClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setError("You must be logged in")
+      setLoading(false)
+      return
     }
+
+    const data = {
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      position: formData.get("position") as string,
+      department_id: formData.get("department_id") || null,
+      status: formData.get("status") as string,
+      user_id: user.id,
+    }
+
+    let result
+    if (employee) {
+      result = await supabase.from("employees").update(data).eq("id", employee.id)
+    } else {
+      result = await supabase.from("employees").insert(data)
+    }
+
+    if (result.error) {
+      setError(result.error.message)
+      setLoading(false)
+      return
+    }
+
+    router.push("/employees")
+    router.refresh()
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="name">Full Name</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, name: e.target.value }))
-            }
-            placeholder="John Doe"
-          />
-          {errors.name && (
-            <p className="text-sm text-destructive">{errors.name}</p>
+    <Card>
+      <CardHeader>
+        <CardTitle>{employee ? "Edit Employee" : "Add New Employee"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+              {error}
+            </div>
           )}
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, email: e.target.value }))
-            }
-            placeholder="john@company.com"
-          />
-          {errors.email && (
-            <p className="text-sm text-destructive">{errors.email}</p>
-          )}
-        </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name *</Label>
+              <Input
+                id="name"
+                name="name"
+                required
+                defaultValue={employee?.name}
+                placeholder="John Doe"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                defaultValue={employee?.email}
+                placeholder="john@company.com"
+              />
+            </div>
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="position">Position</Label>
-          <Input
-            id="position"
-            value={formData.position}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, position: e.target.value }))
-            }
-            placeholder="Software Engineer"
-          />
-          {errors.position && (
-            <p className="text-sm text-destructive">{errors.position}</p>
-          )}
-        </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="position">Position *</Label>
+              <Input
+                id="position"
+                name="position"
+                required
+                defaultValue={employee?.position}
+                placeholder="Software Engineer"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="department_id">Department</Label>
+              <Select name="department_id" defaultValue={employee?.department_id || ""}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="department">Department</Label>
-          <Select
-            value={formData.departmentId}
-            onValueChange={(value) =>
-              setFormData((prev) => ({ ...prev, departmentId: value }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select department" />
-            </SelectTrigger>
-            <SelectContent>
-              {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.departmentId && (
-            <p className="text-sm text-destructive">{errors.departmentId}</p>
-          )}
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="status">Status *</Label>
+            <Select name="status" defaultValue={employee?.status || "active"}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
-          <Select
-            value={formData.status}
-            onValueChange={(value) =>
-              setFormData((prev) => ({ ...prev, status: value }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="flex gap-4">
-        <Button type="submit">
-          {mode === "create" ? "Add Employee" : "Save Changes"}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => router.back()}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+          <div className="flex gap-4">
+            <Button type="submit" disabled={loading}>
+              {loading ? "Saving..." : employee ? "Update Employee" : "Add Employee"}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => router.back()}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

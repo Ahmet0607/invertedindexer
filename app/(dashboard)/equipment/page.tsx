@@ -1,88 +1,50 @@
-"use client"
-
-import Link from "next/link"
-import { Plus, AlertCircle } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
-import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { EquipmentTable } from "@/components/equipment/equipment-table"
-import { useData } from "@/lib/store/data-context"
-import { useSubscription } from "@/lib/subscription/subscription-context"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
+import Link from "next/link"
 
-export default function EquipmentPage() {
-  const { equipment } = useData()
-  const { canAddEquipment, getRemainingSlots, planDetails, currentPlan } = useSubscription()
+export default async function EquipmentPage() {
+  const supabase = await createClient()
+  
+  const { data: equipment } = await supabase
+    .from("equipment")
+    .select(`
+      *,
+      category:categories(id, name, color),
+      department:departments(id, name),
+      employee:employees(id, name)
+    `)
+    .order("created_at", { ascending: false })
 
-  const equipmentCount = equipment.length
-  const canAdd = canAddEquipment(equipmentCount)
-  const remainingSlots = getRemainingSlots(equipmentCount)
+  const { data: categories } = await supabase.from("categories").select("*")
+  const { data: departments } = await supabase.from("departments").select("*")
+  const { data: employees } = await supabase.from("employees").select("*").eq("status", "active")
 
   return (
     <>
-      <Header
-        breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Equipment" },
-        ]}
-      />
-      <div className="flex flex-1 flex-col gap-6 p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <Header title="Equipment" description="Manage your equipment inventory" />
+      <div className="flex-1 space-y-4 p-6">
+        <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">Equipment</h1>
-              <Badge variant="outline" className="capitalize">
-                {currentPlan} Plan
-              </Badge>
-            </div>
-            <p className="text-muted-foreground">
-              {planDetails.equipmentLimit === null
-                ? `${equipmentCount} items - Unlimited`
-                : `${equipmentCount} of ${planDetails.equipmentLimit} items used`}
+            <p className="text-sm text-muted-foreground">
+              {equipment?.length || 0} total items
             </p>
           </div>
-          <div className="flex gap-2">
-            {!canAdd && (
-              <Button asChild variant="outline">
-                <Link href="/pricing">Upgrade Plan</Link>
-              </Button>
-            )}
-            <Button asChild disabled={!canAdd}>
-              <Link href={canAdd ? "/equipment/new" : "#"}>
-                <Plus className="mr-2 size-4" />
-                Add Equipment
-              </Link>
-            </Button>
-          </div>
+          <Button asChild>
+            <Link href="/equipment/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Equipment
+            </Link>
+          </Button>
         </div>
-
-        {!canAdd && (
-          <Alert variant="destructive">
-            <AlertCircle className="size-4" />
-            <AlertDescription>
-              You have reached your equipment limit ({planDetails.equipmentLimit} items).{" "}
-              <Link href="/pricing" className="font-medium underline">
-                Upgrade your plan
-              </Link>{" "}
-              to add more equipment.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {canAdd && remainingSlots !== null && remainingSlots <= 2 && (
-          <Alert>
-            <AlertCircle className="size-4" />
-            <AlertDescription>
-              You have {remainingSlots} equipment slot{remainingSlots === 1 ? "" : "s"} remaining.{" "}
-              <Link href="/pricing" className="font-medium underline">
-                Upgrade your plan
-              </Link>{" "}
-              for more capacity.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <EquipmentTable />
+        <EquipmentTable 
+          equipment={equipment || []} 
+          categories={categories || []}
+          departments={departments || []}
+          employees={employees || []}
+        />
       </div>
     </>
   )

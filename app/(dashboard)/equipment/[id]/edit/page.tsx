@@ -1,45 +1,38 @@
-"use client"
-
-import { use } from "react"
-import { notFound } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
 import { EquipmentForm } from "@/components/equipment/equipment-form"
-import { useData } from "@/lib/store/data-context"
+import { notFound } from "next/navigation"
 
-interface EditEquipmentPageProps {
+export default async function EditEquipmentPage({
+  params,
+}: {
   params: Promise<{ id: string }>
-}
-
-export default function EditEquipmentPage({ params }: EditEquipmentPageProps) {
-  const { id } = use(params)
-  const { getEquipmentById } = useData()
-
-  const equipment = getEquipmentById(id)
+}) {
+  const { id } = await params
+  const supabase = await createClient()
+  
+  const { data: equipment } = await supabase
+    .from("equipment")
+    .select("*")
+    .eq("id", id)
+    .single()
 
   if (!equipment) {
     notFound()
   }
 
+  const { data: categories } = await supabase.from("categories").select("id, name")
+  const { data: departments } = await supabase.from("departments").select("id, name")
+
   return (
     <>
-      <Header
-        breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Equipment", href: "/equipment" },
-          { label: equipment.name, href: `/equipment/${equipment.id}` },
-          { label: "Edit" },
-        ]}
-      />
-      <div className="flex flex-1 flex-col gap-6 p-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Edit Equipment
-          </h1>
-          <p className="text-muted-foreground">
-            Update equipment information
-          </p>
-        </div>
-        <EquipmentForm equipment={equipment} mode="edit" />
+      <Header title="Edit Equipment" description="Update equipment details" />
+      <div className="flex-1 p-6">
+        <EquipmentForm 
+          equipment={equipment}
+          categories={categories || []} 
+          departments={departments || []} 
+        />
       </div>
     </>
   )

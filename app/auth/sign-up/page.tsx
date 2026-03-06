@@ -1,27 +1,26 @@
-'use client'
+"use client"
 
-import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
+import { createClient } from "@/lib/supabase/client"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { Package } from "lucide-react"
 
-export default function Page() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [repeatPassword, setRepeatPassword] = useState('')
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [companyName, setCompanyName] = useState('')
+export default function SignUpPage() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [companyName, setCompanyName] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -32,8 +31,14 @@ export default function Page() {
     setIsLoading(true)
     setError(null)
 
-    if (password !== repeatPassword) {
-      setError('Passwords do not match')
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      setIsLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters")
       setIsLoading(false)
       return
     }
@@ -43,66 +48,49 @@ export default function Page() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo:
+            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+            `${window.location.origin}/dashboard`,
           data: {
-            first_name: firstName,
-            last_name: lastName,
             company_name: companyName,
           },
         },
       })
       if (error) throw error
-      router.push('/auth/sign-up-success')
+      router.push("/auth/sign-up-success")
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'An error occurred')
+      setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 bg-muted/40">
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+              <Package className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <span className="text-2xl font-bold">EquipTracking</span>
+          </div>
           <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Sign up</CardTitle>
-              <CardDescription>Create a new account</CardDescription>
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Create an account</CardTitle>
+              <CardDescription>
+                Start tracking your equipment today
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSignUp}>
                 <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input
-                        id="firstName"
-                        type="text"
-                        placeholder="John"
-                        required
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input
-                        id="lastName"
-                        type="text"
-                        placeholder="Doe"
-                        required
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                      />
-                    </div>
-                  </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="companyName">Company Name</Label>
+                    <Label htmlFor="company">Company Name</Label>
                     <Input
-                      id="companyName"
+                      id="company"
                       type="text"
                       placeholder="Acme Inc."
-                      required
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
                     />
@@ -112,16 +100,14 @@ export default function Page() {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="m@example.com"
+                      placeholder="name@company.com"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
                   <div className="grid gap-2">
-                    <div className="flex items-center">
-                      <Label htmlFor="password">Password</Label>
-                    </div>
+                    <Label htmlFor="password">Password</Label>
                     <Input
                       id="password"
                       type="password"
@@ -131,29 +117,29 @@ export default function Page() {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <div className="flex items-center">
-                      <Label htmlFor="repeat-password">Repeat Password</Label>
-                    </div>
+                    <Label htmlFor="confirm-password">Confirm Password</Label>
                     <Input
-                      id="repeat-password"
+                      id="confirm-password"
                       type="password"
                       required
-                      value={repeatPassword}
-                      onChange={(e) => setRepeatPassword(e.target.value)}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                     />
                   </div>
-                  {error && <p className="text-sm text-red-500">{error}</p>}
+                  {error && (
+                    <p className="text-sm text-destructive">{error}</p>
+                  )}
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Creating an account...' : 'Sign up'}
+                    {isLoading ? "Creating account..." : "Create account"}
                   </Button>
                 </div>
-                <div className="mt-4 text-center text-sm">
-                  Already have an account?{' '}
+                <div className="mt-4 text-center text-sm text-muted-foreground">
+                  Already have an account?{" "}
                   <Link
                     href="/auth/login"
-                    className="underline underline-offset-4"
+                    className="text-primary underline underline-offset-4 hover:text-primary/80"
                   >
-                    Login
+                    Sign in
                   </Link>
                 </div>
               </form>
