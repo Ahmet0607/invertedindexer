@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Camera, Upload, X, Image as ImageIcon } from "lucide-react"
+import { logActivity } from "@/lib/activity-log"
 
 interface Props {
   categories: { id: string; name: string }[]
@@ -197,6 +198,14 @@ export function EquipmentForm({ categories, departments, equipment }: Props) {
       setLoading(false)
       return
     }
+
+    // Log activity
+    await logActivity(
+      equipment ? "updated" : "added",
+      "equipment",
+      data.name,
+      equipment?.id
+    )
 
     router.push("/equipment")
     router.refresh()

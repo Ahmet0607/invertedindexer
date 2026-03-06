@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { logActivity } from "@/lib/activity-log"
 
 interface Invitation {
   id: string
@@ -88,14 +89,11 @@ export default function TeamPage() {
     setLoading(false)
   }
 
-  const [emailSent, setEmailSent] = useState(false)
-
   const sendInvitation = async () => {
     if (!inviteEmail) return
     setSending(true)
     setError(null)
     setInviteLink(null)
-    setEmailSent(false)
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
@@ -124,37 +122,28 @@ export default function TeamPage() {
     const link = `${window.location.origin}/invite/${token}`
     setInviteLink(link)
 
-    // Try to send email notification
-    try {
-      const response = await fetch('/api/send-invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: inviteEmail,
-          inviteLink: link,
-          inviterEmail: user.email
-        })
-      })
-      
-      const result = await response.json()
-      if (result.success && result.method === 'email') {
-        setEmailSent(true)
-      }
-    } catch (e) {
-      // Email sending failed, but invitation was created
-      console.log('Email sending failed, using manual link')
-    }
+    // Log activity
+    await logActivity(
+      "invited",
+      "team_member",
+      inviteEmail
+    )
 
     fetchTeamData()
     setSending(false)
   }
 
-  const copyLink = async () => {
-    if (inviteLink) {
-      await navigator.clipboard.writeText(inviteLink)
+  const copyLink = async (link?: string) => {
+    const linkToCopy = link || inviteLink
+    if (linkToCopy) {
+      await navigator.clipboard.writeText(linkToCopy)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
+  }
+
+  const getInviteLink = (token: string) => {
+    return `${window.location.origin}/invite/${token}`
   }
 
   const deleteInvitation = async (id: string) => {
@@ -181,7 +170,6 @@ export default function TeamPage() {
     setError(null)
     setInviteLink(null)
     setCopied(false)
-    setEmailSent(false)
   }
 
   const roleIcons: Record<string, React.ReactNode> = {
@@ -244,28 +232,33 @@ export default function TeamPage() {
                 </div>
               ) : (
                 <div className="space-y-4 pt-4">
-                  {emailSent ? (
-                    <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800 p-4">
-                      <p className="text-sm text-green-700 dark:text-green-300 font-medium mb-1">
-                        Invitation email sent!
-                      </p>
-                      <p className="text-sm text-green-600 dark:text-green-400">
-                        We&apos;ve sent an invitation email to <strong>{inviteEmail}</strong>.
-                      </p>
+                  <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800 p-4">
+                    <p className="text-sm text-green-700 dark:text-green-300 font-medium mb-1">
+                      Invitation created!
+                    </p>
+                    <p className="text-sm text-green-600 dark:text-green-400">
+                      Copy the link below and send it to <strong>{inviteEmail}</strong>
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Invitation Link</label>
+                    <div className="flex gap-2">
+                      <Input readOnly value={inviteLink} className="font-mono text-xs" />
+                      <Button onClick={copyLink} variant={copied ? "default" : "outline"}>
+                        {copied ? (
+                          <>
+                            <Check className="mr-2 h-4 w-4" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copy Link
+                          </>
+                        )}
+                      </Button>
                     </div>
-                  ) : (
-                    <div className="rounded-lg border bg-muted/50 p-4">
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Share this link with <strong>{inviteEmail}</strong>:
-                      </p>
-                      <div className="flex gap-2">
-                        <Input readOnly value={inviteLink} className="text-xs" />
-                        <Button variant="outline" size="icon" onClick={copyLink}>
-                          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     This invitation link will expire in 7 days.
                   </p>

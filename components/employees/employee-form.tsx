@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { logActivity } from "@/lib/activity-log"
 
 interface Props {
   departments: { id: string; name: string }[]
@@ -68,6 +69,14 @@ export function EmployeeForm({ departments, employee }: Props) {
       setLoading(false)
       return
     }
+
+    // Log activity
+    await logActivity(
+      employee ? "updated" : "added",
+      "employee",
+      data.name,
+      employee?.id
+    )
 
     router.push("/employees")
     router.refresh()
