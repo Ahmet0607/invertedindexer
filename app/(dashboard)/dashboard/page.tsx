@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, PackageCheck, PackageX, Wrench, AlertTriangle, Search } from "lucide-react"
+import { Package, PackageCheck, PackageX, Wrench, AlertTriangle, Search, Clock } from "lucide-react"
 import { WarrantyAlerts } from "@/components/dashboard/warranty-alerts"
+import { formatDistanceToNow } from "date-fns"
 
 async function getStats(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never) {
   const { data: equipment } = await supabase.from("equipment").select("status")
@@ -19,9 +20,20 @@ async function getStats(supabase: ReturnType<typeof createClient> extends Promis
   return stats
 }
 
+async function getRecentActivity(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never) {
+  const { data: recentEquipment } = await supabase
+    .from("equipment")
+    .select("id, name, status, created_at, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(5)
+  
+  return recentEquipment || []
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   const stats = await getStats(supabase)
+  const recentActivity = await getRecentActivity(supabase)
 
   const metrics = [
     { title: "Total Equipment", value: stats.total, icon: Package, color: "text-foreground" },
@@ -60,9 +72,28 @@ export default async function DashboardPage() {
               <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                No recent activity. Add equipment to get started.
-              </p>
+              {recentActivity.length > 0 ? (
+                <ul className="space-y-3">
+                  {recentActivity.map((item) => (
+                    <li key={item.id} className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">{item.name}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{item.status}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(item.updated_at), { addSuffix: true })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No recent activity. Add equipment to get started.
+                </p>
+              )}
             </CardContent>
           </Card>
           <Card>

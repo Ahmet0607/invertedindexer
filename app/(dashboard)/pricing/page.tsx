@@ -34,11 +34,11 @@ export default function PricingPage() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
+        <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto items-start">
           {PRODUCTS.map((product) => (
             <Card 
               key={product.id} 
-              className={`relative flex flex-col ${product.popular ? 'border-primary shadow-lg scale-105' : ''}`}
+              className={`relative flex flex-col ${product.popular ? 'border-primary shadow-lg' : ''}`}
             >
               {product.popular && (
                 <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
@@ -82,7 +82,7 @@ export default function PricingPage() {
         </div>
 
         <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="sm:max-w-md md:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Complete your subscription</DialogTitle>
             </DialogHeader>
