@@ -1,8 +1,5 @@
-// VERSION: 2024-03-05-FINAL-FIX-v5
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
-import { PWAInstallBanner } from '@/components/pwa-install-banner'
 import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
@@ -12,25 +9,25 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'EquipTracking - Equipment Management',
   description: 'Track and manage your company equipment, assignments, and maintenance',
-  generator: 'v0.app',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'EquipTracking',
   },
   icons: {
-    icon: '/favicon.jpg',
-    apple: '/icons/icon-192x192.jpg',
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0a0a0a',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
+  ],
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 }
 
 export default function RootLayout({
@@ -40,22 +37,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js');
-                });
-              }
-            `,
-          }}
-        />
-      </head>
       <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"
@@ -64,9 +45,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <PWAInstallBanner />
         </ThemeProvider>
-        <Analytics />
       </body>
     </html>
   )
