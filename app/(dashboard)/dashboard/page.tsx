@@ -7,8 +7,11 @@ import { WarrantyAlerts } from "@/components/dashboard/warranty-alerts"
 import { formatDistanceToNow } from "date-fns"
 import Link from "next/link"
 
-async function getStats(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never) {
-  const { data: equipment } = await supabase.from("equipment").select("status")
+async function getStats(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never, userId: string) {
+  const { data: equipment } = await supabase
+    .from("equipment")
+    .select("status")
+    .eq("user_id", userId)
   
   const stats = {
     total: equipment?.length || 0,
@@ -22,20 +25,32 @@ async function getStats(supabase: ReturnType<typeof createClient> extends Promis
   return stats
 }
 
-async function getRecentActivity(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never) {
-  const { data: recentEquipment } = await supabase
+async function getRecentActivity(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never, userId: string) {
+  const { data: recentEquipment, error } = await supabase
     .from("equipment")
     .select("id, name, status, created_at, updated_at")
+    .eq("user_id", userId)
     .order("updated_at", { ascending: false })
     .limit(5)
+  
+  if (error) {
+    console.log("[v0] Recent activity error:", error)
+    return []
+  }
   
   return recentEquipment || []
 }
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const stats = await getStats(supabase)
-  const recentActivity = await getRecentActivity(supabase)
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    return <div>Please log in</div>
+  }
+  
+  const stats = await getStats(supabase, user.id)
+  const recentActivity = await getRecentActivity(supabase, user.id)
 
   const metrics = [
     { title: "Total Equipment", value: stats.total, icon: Package, color: "text-foreground" },
