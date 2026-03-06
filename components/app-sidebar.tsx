@@ -26,9 +26,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 const mainNavItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -48,6 +50,14 @@ const settingsNavItems = [
 export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const isMobile = useIsMobile()
+  const { setOpenMobile } = useSidebar()
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -74,7 +84,7 @@ export function AppSidebar() {
                     asChild
                     isActive={pathname === item.href}
                   >
-                    <Link href={item.href}>
+                    <Link href={item.href} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
@@ -94,7 +104,7 @@ export function AppSidebar() {
                     asChild
                     isActive={pathname === item.href}
                   >
-                    <Link href={item.href}>
+                    <Link href={item.href} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
