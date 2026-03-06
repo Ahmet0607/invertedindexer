@@ -21,6 +21,7 @@ export function WarrantyAlerts() {
 
   useEffect(() => {
     fetchExpiringWarranties()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchExpiringWarranties = async () => {
