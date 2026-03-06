@@ -1,4 +1,5 @@
 "use client"
+// Last updated: Fixed BreadcrumbSeparator to use span instead of li
 
 import * as React from "react"
 import { ChevronRight, MoreHorizontal } from "lucide-react"

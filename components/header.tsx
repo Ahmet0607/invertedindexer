@@ -1,4 +1,5 @@
 "use client"
+// Last updated: Using inline span for breadcrumb separator
 
 import * as React from "react"
 import { ChevronRight } from "lucide-react"
