@@ -100,6 +100,40 @@ export function EquipmentForm({ categories, departments, equipment }: Props) {
       return
     }
 
+    // Check equipment limit for new equipment only
+    if (!equipment) {
+      // Get user's subscription
+      const { data: subscription } = await supabase
+        .from("subscriptions")
+        .select("plan, equipment_limit")
+        .eq("user_id", user.id)
+        .single()
+      
+      // Default to basic plan limits if no subscription found
+      const equipmentLimit = subscription?.equipment_limit ?? 5
+      const plan = subscription?.plan ?? "basic"
+      
+      // Count current equipment
+      const { count } = await supabase
+        .from("equipment")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+      
+      const currentCount = count ?? 0
+      
+      // Check if limit reached (advanced plan has unlimited = -1 or very high number)
+      if (equipmentLimit !== -1 && currentCount >= equipmentLimit) {
+        const planNames: Record<string, string> = {
+          basic: "Basic (5 items)",
+          pro: "Pro (50 items)",
+          advanced: "Advanced (unlimited)"
+        }
+        setError(`You have reached your equipment limit (${currentCount}/${equipmentLimit}). Please upgrade to ${plan === "basic" ? "Pro" : "Advanced"} plan to add more equipment.`)
+        setLoading(false)
+        return
+      }
+    }
+
     let photoUrl = equipment?.photo_url || null
     
     // Upload new photo if selected
@@ -115,10 +149,28 @@ export function EquipmentForm({ categories, departments, equipment }: Props) {
 
     const warrantyExpiry = formData.get("warranty_expiry") as string
     
+    const serialNumber = formData.get("serial_number") as string
+
+    // Check if serial number already exists (for new equipment or if changed during edit)
+    if (!equipment || equipment.serial_number !== serialNumber) {
+      const { data: existingEquipment } = await supabase
+        .from("equipment")
+        .select("id")
+        .eq("serial_number", serialNumber)
+        .eq("user_id", user.id)
+        .single()
+      
+      if (existingEquipment) {
+        setError("This serial number is already added. Please use a unique serial number.")
+        setLoading(false)
+        return
+      }
+    }
+
     const data = {
       name: formData.get("name") as string,
       brand: formData.get("brand") as string,
-      serial_number: formData.get("serial_number") as string,
+      serial_number: serialNumber,
       category_id: formData.get("category_id") || null,
       department_id: formData.get("department_id") || null,
       status: formData.get("status") as string,

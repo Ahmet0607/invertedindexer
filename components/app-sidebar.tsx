@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
   Users2,
+  CreditCard,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -40,6 +41,7 @@ const mainNavItems = [
 
 const settingsNavItems = [
   { title: "Team", href: "/team", icon: Users2 },
+  { title: "Pricing", href: "/pricing", icon: CreditCard },
   { title: "Settings", href: "/settings", icon: Settings },
 ]
 
