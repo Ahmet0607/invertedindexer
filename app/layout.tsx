@@ -1,3 +1,4 @@
+// Build version: 2024-SYNC-v3
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'

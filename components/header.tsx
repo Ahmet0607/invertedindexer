@@ -1,3 +1,4 @@
+// Build version: 2024-SYNC-v3 - Plain HTML breadcrumbs, no BreadcrumbSeparator
 "use client"
 
 import Link from "next/link"

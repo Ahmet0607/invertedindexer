@@ -1,5 +1,5 @@
+// Build version: 2024-SYNC-v3 - FIXED BreadcrumbSeparator is SPAN not LI
 "use client"
-// v2 - BreadcrumbSeparator MUST be span, not li
 
 import * as React from "react"
 import { ChevronRight, MoreHorizontal } from "lucide-react"
