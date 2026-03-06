@@ -1,6 +1,6 @@
 "use client"
-// REBUILD MARKER: 2024-03-05-FIX-HYDRATION-v4
-// BreadcrumbSeparator MUST be span NOT li to prevent hydration errors
+// VERSION: 2024-03-05-FINAL-FIX-v5
+// BreadcrumbSeparator MUST render <span> NOT <li>
 
 import * as React from "react"
 import { ChevronRight, MoreHorizontal } from "lucide-react"
@@ -76,9 +76,8 @@ const BreadcrumbPage = React.forwardRef<
 ))
 BreadcrumbPage.displayName = "BreadcrumbPage"
 
-// CRITICAL: This component MUST render a <span>, NOT an <li>
-// Rendering <li> causes "li cannot be nested in li" hydration errors
-// because BreadcrumbSeparator is used inside BreadcrumbItem (which is <li>)
+// CRITICAL FIX: This MUST be <span> NOT <li>
+// Using <li> causes nested <li> hydration errors
 const BreadcrumbSeparator = React.forwardRef<
   HTMLSpanElement,
   React.ComponentPropsWithoutRef<"span">

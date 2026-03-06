@@ -1,4 +1,4 @@
-// REBUILD MARKER: 2024-03-05-FIX-HYDRATION-v4
+// VERSION: 2024-03-05-FINAL-FIX-v5
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'

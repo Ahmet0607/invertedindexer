@@ -1,6 +1,6 @@
 "use client"
-// REBUILD MARKER: 2024-03-05-FIX-HYDRATION-v4
-// This header uses plain HTML for breadcrumbs to avoid hydration errors
+// VERSION: 2024-03-05-FINAL-FIX-v5
+// Uses plain HTML breadcrumbs - NO BreadcrumbSeparator component
 
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
@@ -21,7 +21,7 @@ export function Header({ breadcrumbs }: HeaderProps) {
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 h-4" />
       
-      {/* Plain HTML breadcrumbs - no BreadcrumbSeparator component */}
+      {/* Plain HTML breadcrumbs to avoid nested li hydration errors */}
       <nav aria-label="breadcrumb" className="flex items-center">
         <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
           {breadcrumbs.map((crumb, index) => (
