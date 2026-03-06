@@ -1,26 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Header } from "@/components/header"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Check } from "lucide-react"
 import { PRODUCTS } from "@/lib/products"
-import Checkout from "@/components/checkout"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function PricingPage() {
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
-  const [showCheckout, setShowCheckout] = useState(false)
+  const router = useRouter()
 
   const handleSelectPlan = (planId: string) => {
     if (planId === 'basic') {
-      // Basic is free, no checkout needed
       return
     }
-    setSelectedPlan(planId)
-    setShowCheckout(true)
+    router.push(`/checkout/${planId}`)
   }
 
   return (
@@ -80,15 +75,6 @@ export default function PricingPage() {
             </Card>
           ))}
         </div>
-
-        <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
-          <DialogContent className="sm:max-w-md md:max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Complete your subscription</DialogTitle>
-            </DialogHeader>
-            {selectedPlan && <Checkout productId={selectedPlan} />}
-          </DialogContent>
-        </Dialog>
       </div>
     </>
   )
