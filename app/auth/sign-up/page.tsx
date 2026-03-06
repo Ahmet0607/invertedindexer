@@ -19,9 +19,6 @@ export default function Page() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [repeatPassword, setRepeatPassword] = useState('')
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [companyName, setCompanyName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -43,12 +40,9 @@ export default function Page() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-            company_name: companyName,
-          },
+          emailRedirectTo:
+            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+            `${window.location.origin}/protected`,
         },
       })
       if (error) throw error
@@ -71,42 +65,7 @@ export default function Page() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSignUp}>
-                <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input
-                        id="firstName"
-                        type="text"
-                        placeholder="John"
-                        required
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input
-                        id="lastName"
-                        type="text"
-                        placeholder="Doe"
-                        required
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="companyName">Company Name</Label>
-                    <Input
-                      id="companyName"
-                      type="text"
-                      placeholder="Acme Inc."
-                      required
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                    />
-                  </div>
+                <div className="flex flex-col gap-6">
                   <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
