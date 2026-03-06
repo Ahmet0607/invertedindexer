@@ -5,11 +5,17 @@ import { createClient } from '@supabase/supabase-js'
 import { getProductByPriceId } from '@/lib/products'
 import Stripe from 'stripe'
 
-// Use service role for webhook (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Create Supabase admin client lazily to avoid build errors
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  if (!url || !key) {
+    throw new Error('Missing Supabase environment variables')
+  }
+  
+  return createClient(url, key)
+}
 
 export async function POST(req: Request) {
   const body = await req.text()
@@ -48,6 +54,7 @@ export async function POST(req: Request) {
           
           if (userId && plan) {
             const product = getProductByPriceId(subscription.items.data[0].price.id)
+            const supabaseAdmin = getSupabaseAdmin()
             
             await supabaseAdmin
               .from('subscriptions')
@@ -71,6 +78,7 @@ export async function POST(req: Request) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
         const product = getProductByPriceId(subscription.items.data[0].price.id)
+        const supabaseAdmin = getSupabaseAdmin()
         
         await supabaseAdmin
           .from('subscriptions')
@@ -88,6 +96,7 @@ export async function POST(req: Request) {
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
+        const supabaseAdmin = getSupabaseAdmin()
         
         // Downgrade to basic plan
         await supabaseAdmin
