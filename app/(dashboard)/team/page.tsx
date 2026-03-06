@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { UserPlus, Mail, Trash2, Users, Copy, Check, Crown, Shield, User } from "lucide-react"
+import { UserPlus, Mail, Trash2, Users, Copy, Check, Shield, User } from "lucide-react"
 import {
   Dialog,
   DialogContent,

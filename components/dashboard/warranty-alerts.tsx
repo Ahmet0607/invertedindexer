@@ -36,7 +36,7 @@ export function WarrantyAlerts() {
     const today = new Date().toISOString().split("T")[0]
     const futureDate = thirtyDaysFromNow.toISOString().split("T")[0]
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("equipment")
       .select("id, name, brand, warranty_expiry")
       .eq("user_id", user.id)
