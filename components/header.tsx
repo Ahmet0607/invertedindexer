@@ -1,17 +1,9 @@
 "use client"
-// v2 - Header with inline span separator (not BreadcrumbSeparator component)
 
-import * as React from "react"
+import Link from "next/link"
 import { ChevronRight } from "lucide-react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from "@/components/ui/breadcrumb"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 interface HeaderProps {
@@ -26,30 +18,27 @@ export function Header({ breadcrumbs }: HeaderProps) {
     <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 h-4" />
-      <Breadcrumb>
-        <BreadcrumbList>
-          {breadcrumbs.map((crumb, idx) => (
-            <React.Fragment key={`breadcrumb-${crumb.label}-${idx}`}>
-              {idx > 0 && (
-                <span
-                  role="presentation"
-                  aria-hidden="true"
-                  className="hidden md:block"
-                >
-                  <ChevronRight className="size-3.5 text-muted-foreground" />
-                </span>
+      <nav aria-label="breadcrumb" className="flex items-center">
+        <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          {breadcrumbs.map((crumb, index) => (
+            <li key={crumb.label} className="flex items-center gap-1.5">
+              {index > 0 && (
+                <ChevronRight className="size-3.5 hidden md:block" aria-hidden="true" />
               )}
-              <BreadcrumbItem>
-                {crumb.href ? (
-                  <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
-                ) : (
-                  <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                )}
-              </BreadcrumbItem>
-            </React.Fragment>
+              {crumb.href ? (
+                <Link 
+                  href={crumb.href} 
+                  className="hover:text-foreground transition-colors"
+                >
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span className="text-foreground font-medium">{crumb.label}</span>
+              )}
+            </li>
           ))}
-        </BreadcrumbList>
-      </Breadcrumb>
+        </ol>
+      </nav>
       <div className="ml-auto flex items-center gap-2">
         <ThemeToggle />
       </div>
