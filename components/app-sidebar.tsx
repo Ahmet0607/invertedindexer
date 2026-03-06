@@ -100,7 +100,7 @@ export function AppSidebar() {
             <Box className="size-4" />
           </div>
           <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
-            <span className="font-semibold">EquipTrack</span>
+            <span className="font-semibold">EquipTracking</span>
             <span className="text-xs text-muted-foreground">
               Equipment Management
             </span>

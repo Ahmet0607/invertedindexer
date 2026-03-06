@@ -1,6 +1,6 @@
 {
-  "name": "EquipTrack - Equipment Management",
-  "short_name": "EquipTrack",
+  "name": "EquipTracking - Equipment Management",
+  "short_name": "EquipTracking",
   "description": "Track and manage your company equipment, assignments, and maintenance",
   "start_url": "/dashboard",
   "display": "standalone",
