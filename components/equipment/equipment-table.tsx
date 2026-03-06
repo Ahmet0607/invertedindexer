@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import Image from "next/image"
+import { MoreHorizontal, Pencil, Trash2, AlertTriangle, Package } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -38,6 +39,8 @@ interface Equipment {
   status: string
   purchase_date: string
   purchase_price: number
+  warranty_expiry: string | null
+  photo_url: string | null
   category: { id: string; name: string; color: string } | null
   department: { id: string; name: string } | null
   employee: { id: string; name: string } | null
@@ -120,11 +123,13 @@ export function EquipmentTable({ equipment, categories, departments }: Props) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[60px]">Photo</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Brand</TableHead>
               <TableHead>Serial Number</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Warranty</TableHead>
               <TableHead>Assigned To</TableHead>
               <TableHead className="w-[70px]"></TableHead>
             </TableRow>
@@ -132,13 +137,35 @@ export function EquipmentTable({ equipment, categories, departments }: Props) {
           <TableBody>
             {filteredEquipment.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                   No equipment found. Add your first item to get started.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredEquipment.map((item) => (
+              filteredEquipment.map((item) => {
+                const warrantyDate = item.warranty_expiry ? new Date(item.warranty_expiry) : null
+                const now = new Date()
+                const oneMonthFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+                const isWarrantyExpiring = warrantyDate && warrantyDate <= oneMonthFromNow && warrantyDate > now
+                const isWarrantyExpired = warrantyDate && warrantyDate <= now
+                
+                return (
                 <TableRow key={item.id}>
+                  <TableCell>
+                    {item.photo_url ? (
+                      <Image
+                        src={item.photo_url}
+                        alt={item.name}
+                        width={40}
+                        height={40}
+                        className="rounded object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
+                        <Package className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>{item.brand}</TableCell>
                   <TableCell className="font-mono text-sm">{item.serial_number}</TableCell>
@@ -153,6 +180,20 @@ export function EquipmentTable({ equipment, categories, departments }: Props) {
                     <Badge className={statusColors[item.status]}>
                       {item.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {warrantyDate ? (
+                      <div className="flex items-center gap-1">
+                        {(isWarrantyExpiring || isWarrantyExpired) && (
+                          <AlertTriangle className={`h-4 w-4 ${isWarrantyExpired ? 'text-red-500' : 'text-yellow-500'}`} />
+                        )}
+                        <span className={isWarrantyExpired ? 'text-red-500' : isWarrantyExpiring ? 'text-yellow-600' : ''}>
+                          {warrantyDate.toLocaleDateString()}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
                   </TableCell>
                   <TableCell>{item.employee?.name || "-"}</TableCell>
                   <TableCell>
@@ -180,7 +221,7 @@ export function EquipmentTable({ equipment, categories, departments }: Props) {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))
+              )})
             )}
           </TableBody>
         </Table>

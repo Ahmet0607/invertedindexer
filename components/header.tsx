@@ -3,7 +3,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { PWAInstallButton } from "@/components/pwa-install-button"
 
 interface HeaderProps {
   title: string
@@ -21,7 +20,6 @@ export function Header({ title, description }: HeaderProps) {
           <p className="text-xs text-muted-foreground">{description}</p>
         )}
       </div>
-      <PWAInstallButton />
       <ThemeToggle />
     </header>
   )

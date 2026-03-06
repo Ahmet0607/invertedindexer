@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Settings,
   LogOut,
+  Users2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -38,6 +39,7 @@ const mainNavItems = [
 ]
 
 const settingsNavItems = [
+  { title: "Team", href: "/team", icon: Users2 },
   { title: "Settings", href: "/settings", icon: Settings },
 ]
 

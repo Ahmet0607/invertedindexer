@@ -1,38 +1,14 @@
 "use client"
 
-import { useState } from "react"
-import { format, parseISO } from "date-fns"
-import { 
-  UserPlus, 
-  MoreHorizontal, 
-  Mail, 
-  Shield, 
-  User, 
-  Crown,
-  Copy,
-  Check,
-  RefreshCw,
-  X
-} from "lucide-react"
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { UserPlus, Mail, Trash2, Users, Copy, Check, Crown, Shield, User } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -43,65 +19,111 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useTeam } from "@/lib/team/team-context"
-import type { TeamRole } from "@/lib/team/types"
 
-const roleIcons: Record<TeamRole, React.ReactNode> = {
-  owner: <Crown className="size-4 text-yellow-500" />,
-  admin: <Shield className="size-4 text-blue-500" />,
-  member: <User className="size-4 text-muted-foreground" />,
+interface Invitation {
+  id: string
+  email: string
+  status: string
+  token: string
+  created_at: string
+  expires_at: string
 }
 
-const roleLabels: Record<TeamRole, string> = {
-  owner: "Owner",
-  admin: "Admin",
-  member: "Member",
+interface TeamMember {
+  id: string
+  user_id: string
+  role: string
+  created_at: string
+  profiles: {
+    first_name: string | null
+    last_name: string | null
+  } | null
 }
 
 export default function TeamPage() {
-  const { members, invitations, inviteMember, removeMember, revokeInvitation, resendInvitation } = useTeam()
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
+  const [invitations, setInvitations] = useState<Invitation[]>([])
+  const [members, setMembers] = useState<TeamMember[]>([])
+  const [loading, setLoading] = useState(true)
   const [inviteEmail, setInviteEmail] = useState("")
-  const [inviteRole, setInviteRole] = useState<TeamRole>("member")
-  const [isInviting, setIsInviting] = useState(false)
-  const [inviteError, setInviteError] = useState<string | null>(null)
+  const [inviteRole, setInviteRole] = useState("member")
+  const [sending, setSending] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const handleInvite = async () => {
-    if (!inviteEmail.trim()) {
-      setInviteError("Please enter an email address")
+  const supabase = createClient()
+
+  useEffect(() => {
+    fetchTeamData()
+  }, [])
+
+  const fetchTeamData = async () => {
+    setLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const [invitationsRes, membersRes] = await Promise.all([
+      supabase
+        .from("team_invitations")
+        .select("*")
+        .eq("team_owner_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("team_members")
+        .select("*, profiles(first_name, last_name)")
+        .eq("team_owner_id", user.id)
+        .order("created_at", { ascending: false })
+    ])
+
+    if (invitationsRes.data) setInvitations(invitationsRes.data)
+    if (membersRes.data) setMembers(membersRes.data as TeamMember[])
+    setLoading(false)
+  }
+
+  const sendInvitation = async () => {
+    if (!inviteEmail) return
+    setSending(true)
+    setError(null)
+    setInviteLink(null)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setError("You must be logged in")
+      setSending(false)
       return
     }
 
-    setIsInviting(true)
-    setInviteError(null)
+    const token = crypto.randomUUID()
 
-    const result = await inviteMember(inviteEmail.trim(), inviteRole)
-    
-    if (result.success && result.inviteLink) {
-      setInviteLink(result.inviteLink)
-    } else {
-      setInviteError(result.error || "Failed to send invitation")
+    const { error: insertError } = await supabase
+      .from("team_invitations")
+      .insert({
+        email: inviteEmail,
+        team_owner_id: user.id,
+        token,
+        status: "pending"
+      })
+
+    if (insertError) {
+      setError(insertError.message)
+      setSending(false)
+      return
     }
 
-    setIsInviting(false)
+    const link = `${window.location.origin}/invite/${token}`
+    setInviteLink(link)
+    fetchTeamData()
+    setSending(false)
   }
 
-  const copyInviteLink = async () => {
+  const copyLink = async () => {
     if (inviteLink) {
       await navigator.clipboard.writeText(inviteLink)
       setCopied(true)
@@ -109,39 +131,51 @@ export default function TeamPage() {
     }
   }
 
-  const resetInviteDialog = () => {
+  const deleteInvitation = async (id: string) => {
+    await supabase.from("team_invitations").delete().eq("id", id)
+    fetchTeamData()
+  }
+
+  const removeMember = async (id: string) => {
+    await supabase.from("team_members").delete().eq("id", id)
+    fetchTeamData()
+  }
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    })
+  }
+
+  const resetDialog = () => {
     setInviteEmail("")
     setInviteRole("member")
-    setInviteError(null)
+    setError(null)
     setInviteLink(null)
     setCopied(false)
   }
 
-  const pendingInvitations = invitations.filter(i => i.status === "pending")
+  const roleIcons: Record<string, React.ReactNode> = {
+    admin: <Shield className="h-4 w-4 text-blue-500" />,
+    member: <User className="h-4 w-4 text-muted-foreground" />,
+    viewer: <User className="h-4 w-4 text-muted-foreground" />,
+  }
 
   return (
     <>
-      <Header
-        breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Team" },
-        ]}
-      />
-      <div className="flex flex-1 flex-col gap-6 p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Team</h1>
-            <p className="text-muted-foreground">
-              Manage your team members and invitations
-            </p>
-          </div>
-          <Dialog open={inviteDialogOpen} onOpenChange={(open) => {
-            setInviteDialogOpen(open)
-            if (!open) resetInviteDialog()
+      <Header title="Team" description="Manage your team members and invitations" />
+      <div className="flex-1 space-y-6 p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Team Members</h2>
+          <Dialog open={dialogOpen} onOpenChange={(open) => {
+            setDialogOpen(open)
+            if (!open) resetDialog()
           }}>
             <DialogTrigger asChild>
               <Button>
-                <UserPlus className="mr-2 size-4" />
+                <UserPlus className="mr-2 h-4 w-4" />
                 Invite Member
               </Button>
             </DialogTrigger>
@@ -149,14 +183,14 @@ export default function TeamPage() {
               <DialogHeader>
                 <DialogTitle>Invite Team Member</DialogTitle>
                 <DialogDescription>
-                  Send an invitation link to add a new member to your team.
+                  Send an invitation to a colleague to join your team.
                 </DialogDescription>
               </DialogHeader>
               
               {!inviteLink ? (
-                <div className="space-y-4 py-4">
+                <div className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Email address</label>
+                    <label className="text-sm font-medium">Email Address</label>
                     <Input
                       type="email"
                       placeholder="colleague@company.com"
@@ -166,38 +200,31 @@ export default function TeamPage() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Role</label>
-                    <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as TeamRole)}>
+                    <Select value={inviteRole} onValueChange={setInviteRole}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="member">Member - Can view and edit equipment</SelectItem>
-                        <SelectItem value="admin">Admin - Full access except billing</SelectItem>
+                        <SelectItem value="admin">Admin - Full access</SelectItem>
+                        <SelectItem value="member">Member - Can edit</SelectItem>
+                        <SelectItem value="viewer">Viewer - Read only</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  {inviteError && (
-                    <p className="text-sm text-destructive">{inviteError}</p>
+                  {error && (
+                    <p className="text-sm text-red-500">{error}</p>
                   )}
                 </div>
               ) : (
-                <div className="space-y-4 py-4">
+                <div className="space-y-4 pt-4">
                   <div className="rounded-lg border bg-muted/50 p-4">
                     <p className="text-sm text-muted-foreground mb-2">
                       Share this link with <strong>{inviteEmail}</strong>:
                     </p>
                     <div className="flex gap-2">
-                      <Input
-                        readOnly
-                        value={inviteLink}
-                        className="text-xs"
-                      />
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={copyInviteLink}
-                      >
-                        {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                      <Input readOnly value={inviteLink} className="text-xs" />
+                      <Button variant="outline" size="icon" onClick={copyLink}>
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                       </Button>
                     </div>
                   </div>
@@ -209,14 +236,11 @@ export default function TeamPage() {
 
               <DialogFooter>
                 {!inviteLink ? (
-                  <Button onClick={handleInvite} disabled={isInviting}>
-                    {isInviting ? "Sending..." : "Send Invitation"}
+                  <Button onClick={sendInvitation} disabled={sending || !inviteEmail}>
+                    {sending ? "Sending..." : "Send Invitation"}
                   </Button>
                 ) : (
-                  <Button onClick={() => {
-                    setInviteDialogOpen(false)
-                    resetInviteDialog()
-                  }}>
+                  <Button onClick={() => { setDialogOpen(false); resetDialog(); }}>
                     Done
                   </Button>
                 )}
@@ -225,134 +249,106 @@ export default function TeamPage() {
           </Dialog>
         </div>
 
-        {/* Team Members */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Team Members</CardTitle>
-            <CardDescription>
-              {members.length} member{members.length !== 1 ? "s" : ""} in your team
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Active Members
+            </CardTitle>
+            <CardDescription>People who have access to your equipment data</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead className="hidden sm:table-cell">Joined</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{member.name}</span>
-                        <span className="text-sm text-muted-foreground">{member.email}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {roleIcons[member.role]}
-                        <span className="capitalize">{roleLabels[member.role]}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-muted-foreground">
-                      {format(parseISO(member.joinedAt), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell>
-                      {member.role !== "owner" && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Change Role</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => removeMember(member.id)}
-                            >
-                              Remove from Team
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* Pending Invitations */}
-        {pendingInvitations.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Pending Invitations</CardTitle>
-              <CardDescription>
-                {pendingInvitations.length} invitation{pendingInvitations.length !== 1 ? "s" : ""} waiting to be accepted
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+            {loading ? (
+              <div className="py-8 text-center text-muted-foreground">Loading...</div>
+            ) : members.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">
+                No team members yet. Invite someone to get started.
+              </div>
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Email</TableHead>
+                    <TableHead>Name</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead className="hidden sm:table-cell">Expires</TableHead>
+                    <TableHead>Joined</TableHead>
                     <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pendingInvitations.map((invitation) => (
-                    <TableRow key={invitation.id}>
+                  {members.map((member) => (
+                    <TableRow key={member.id}>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Mail className="size-4 text-muted-foreground" />
-                          <span>{invitation.email}</span>
-                        </div>
+                        {member.profiles?.first_name} {member.profiles?.last_name}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {roleIcons[invitation.role]}
-                          <span className="capitalize">{roleLabels[invitation.role]}</span>
+                          {roleIcons[member.role]}
+                          <Badge variant={member.role === "admin" ? "default" : "secondary"}>
+                            {member.role}
+                          </Badge>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell text-muted-foreground">
-                        {format(parseISO(invitation.expiresAt), "MMM d, yyyy")}
-                      </TableCell>
+                      <TableCell>{formatDate(member.created_at)}</TableCell>
                       <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => resendInvitation(invitation.id)}
-                            title="Resend invitation"
-                          >
-                            <RefreshCw className="size-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => revokeInvitation(invitation.id)}
-                            title="Revoke invitation"
-                          >
-                            <X className="size-4" />
-                          </Button>
-                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => removeMember(member.id)}>
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Pending Invitations
+            </CardTitle>
+            <CardDescription>Invitations waiting to be accepted</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="py-8 text-center text-muted-foreground">Loading...</div>
+            ) : invitations.filter(i => i.status === "pending").length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">
+                No pending invitations.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Sent</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invitations.filter(i => i.status === "pending").map((invitation) => (
+                    <TableRow key={invitation.id}>
+                      <TableCell>{invitation.email}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{invitation.status}</Badge>
+                      </TableCell>
+                      <TableCell>{formatDate(invitation.created_at)}</TableCell>
+                      <TableCell>{formatDate(invitation.expires_at)}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" onClick={() => deleteInvitation(invitation.id)}>
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </>
   )
