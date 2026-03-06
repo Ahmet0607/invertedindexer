@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Check } from "lucide-react"
 import { PRODUCTS } from "@/lib/products"
-import { Checkout } from "@/components/checkout"
+import Checkout from "@/components/checkout"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function PricingPage() {
