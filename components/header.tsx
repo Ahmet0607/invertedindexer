@@ -1,5 +1,6 @@
-// Build version: 2024-SYNC-v3 - Plain HTML breadcrumbs, no BreadcrumbSeparator
 "use client"
+// REBUILD MARKER: 2024-03-05-FIX-HYDRATION-v4
+// This header uses plain HTML for breadcrumbs to avoid hydration errors
 
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
@@ -19,12 +20,17 @@ export function Header({ breadcrumbs }: HeaderProps) {
     <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 h-4" />
+      
+      {/* Plain HTML breadcrumbs - no BreadcrumbSeparator component */}
       <nav aria-label="breadcrumb" className="flex items-center">
         <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
           {breadcrumbs.map((crumb, index) => (
-            <li key={crumb.label} className="flex items-center gap-1.5">
+            <li key={`${crumb.label}-${index}`} className="flex items-center gap-1.5">
               {index > 0 && (
-                <ChevronRight className="size-3.5 hidden md:block" aria-hidden="true" />
+                <ChevronRight 
+                  className="size-3.5 hidden md:block text-muted-foreground" 
+                  aria-hidden="true" 
+                />
               )}
               {crumb.href ? (
                 <Link 
@@ -40,6 +46,7 @@ export function Header({ breadcrumbs }: HeaderProps) {
           ))}
         </ol>
       </nav>
+      
       <div className="ml-auto flex items-center gap-2">
         <ThemeToggle />
       </div>
