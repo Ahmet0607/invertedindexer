@@ -62,6 +62,7 @@ export default function TeamPage() {
 
   useEffect(() => {
     fetchTeamData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchTeamData = async () => {

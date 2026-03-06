@@ -19,6 +19,7 @@ export default function InvitePage() {
 
   useEffect(() => {
     checkInvitation()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   const checkInvitation = async () => {
