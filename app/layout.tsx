@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
+import { ServiceWorkerRegister } from '@/components/service-worker-register'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -16,8 +17,8 @@ export const metadata: Metadata = {
     title: 'EquipTracking',
   },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: '/icons/icon-192x192.jpg',
+    apple: '/icons/icon-192x192.jpg',
   },
 }
 
@@ -44,6 +45,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <ServiceWorkerRegister />
           {children}
         </ThemeProvider>
       </body>
