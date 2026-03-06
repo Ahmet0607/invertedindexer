@@ -42,7 +42,8 @@ import type { Equipment, EquipmentStatus } from "@/lib/store/types"
 import { parseISO, format } from "date-fns"
 import { exportToCSV, exportToPDF, formatCurrency, formatDate } from "@/lib/export"
 
-// Helper function to safely format dates without timezone issues
+// v2 - Helper function to safely format dates without timezone issues
+// Uses parseISO to avoid server/client date mismatch
 function formatPurchaseDate(dateString: string): string {
   try {
     const date = parseISO(dateString)

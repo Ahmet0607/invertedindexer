@@ -1,5 +1,5 @@
 "use client"
-// Last updated: Using inline span for breadcrumb separator
+// v2 - Header with inline span separator (not BreadcrumbSeparator component)
 
 import * as React from "react"
 import { ChevronRight } from "lucide-react"
@@ -28,15 +28,15 @@ export function Header({ breadcrumbs }: HeaderProps) {
       <Separator orientation="vertical" className="mr-2 h-4" />
       <Breadcrumb>
         <BreadcrumbList>
-          {breadcrumbs.map((crumb, index) => (
-            <React.Fragment key={`${crumb.label}-${index}`}>
-              {index > 0 && (
+          {breadcrumbs.map((crumb, idx) => (
+            <React.Fragment key={`breadcrumb-${crumb.label}-${idx}`}>
+              {idx > 0 && (
                 <span
                   role="presentation"
                   aria-hidden="true"
-                  className="hidden md:block [&>svg]:size-3.5"
+                  className="hidden md:block"
                 >
-                  <ChevronRight className="size-3.5" />
+                  <ChevronRight className="size-3.5 text-muted-foreground" />
                 </span>
               )}
               <BreadcrumbItem>
