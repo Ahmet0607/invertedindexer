@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Package, PackageCheck, PackageX, Wrench, AlertTriangle, Search, Clock } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Package, PackageCheck, PackageX, Wrench, AlertTriangle, Search, Clock, Plus, UserPlus, ArrowLeftRight, Building2 } from "lucide-react"
 import { WarrantyAlerts } from "@/components/dashboard/warranty-alerts"
 import { formatDistanceToNow } from "date-fns"
+import Link from "next/link"
 
 async function getStats(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never) {
   const { data: equipment } = await supabase.from("equipment").select("status")
@@ -100,10 +102,31 @@ export default async function DashboardPage() {
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Use the sidebar to navigate and manage your equipment, employees, and departments.
-              </p>
+            <CardContent className="grid grid-cols-2 gap-3">
+              <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
+                <Link href="/equipment/new">
+                  <Plus className="h-5 w-5" />
+                  <span className="text-xs">Add Equipment</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
+                <Link href="/employees/new">
+                  <UserPlus className="h-5 w-5" />
+                  <span className="text-xs">Add Employee</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
+                <Link href="/assignments/new">
+                  <ArrowLeftRight className="h-5 w-5" />
+                  <span className="text-xs">Assign Equipment</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
+                <Link href="/departments">
+                  <Building2 className="h-5 w-5" />
+                  <span className="text-xs">Departments</span>
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         </div>
