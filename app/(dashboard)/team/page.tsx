@@ -133,12 +133,17 @@ export default function TeamPage() {
     setSending(false)
   }
 
-  const copyLink = async () => {
-    if (inviteLink) {
-      await navigator.clipboard.writeText(inviteLink)
+  const copyLink = async (link?: string) => {
+    const linkToCopy = link || inviteLink
+    if (linkToCopy) {
+      await navigator.clipboard.writeText(linkToCopy)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
+  }
+
+  const getInviteLink = (token: string) => {
+    return `${window.location.origin}/invite/${token}`
   }
 
   const deleteInvitation = async (id: string) => {
