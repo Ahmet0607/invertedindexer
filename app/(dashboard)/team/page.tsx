@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { logActivity } from "@/lib/activity-log"
 
 interface Invitation {
   id: string
@@ -144,6 +145,13 @@ export default function TeamPage() {
       // Email sending failed, but invitation was created
       console.log('Email sending failed, using manual link')
     }
+
+    // Log activity
+    await logActivity(
+      "invited",
+      "team_member",
+      inviteEmail
+    )
 
     fetchTeamData()
     setSending(false)

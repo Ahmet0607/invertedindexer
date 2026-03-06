@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Package, PackageCheck, PackageX, Wrench, AlertTriangle, Search, Clock, Plus, UserPlus, ArrowLeftRight, Building2 } from "lucide-react"
+import { Package, PackageCheck, PackageX, Wrench, AlertTriangle, Search, Clock, Plus, UserPlus, ArrowLeftRight, Building2, User, FolderOpen, Mail } from "lucide-react"
 import { WarrantyAlerts } from "@/components/dashboard/warranty-alerts"
 import { formatDistanceToNow } from "date-fns"
 import Link from "next/link"
@@ -26,19 +26,39 @@ async function getStats(supabase: ReturnType<typeof createClient> extends Promis
 }
 
 async function getRecentActivity(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never, userId: string) {
-  const { data: recentEquipment, error } = await supabase
+  // Try to get from activity_log first
+  const { data: activityLog, error: activityError } = await supabase
+    .from("activity_log")
+    .select("id, action, entity_type, entity_name, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(5)
+  
+  if (!activityError && activityLog && activityLog.length > 0) {
+    return activityLog.map(item => ({
+      id: item.id,
+      name: item.entity_name,
+      action: item.action,
+      entity_type: item.entity_type,
+      created_at: item.created_at
+    }))
+  }
+  
+  // Fallback to equipment if activity_log doesn't exist or is empty
+  const { data: recentEquipment } = await supabase
     .from("equipment")
     .select("id, name, status, created_at, updated_at")
     .eq("user_id", userId)
     .order("updated_at", { ascending: false })
     .limit(5)
   
-  if (error) {
-    console.log("[v0] Recent activity error:", error)
-    return []
-  }
-  
-  return recentEquipment || []
+  return (recentEquipment || []).map(item => ({
+    id: item.id,
+    name: item.name,
+    action: "updated",
+    entity_type: "equipment",
+    created_at: item.updated_at
+  }))
 }
 
 export default async function DashboardPage() {
@@ -91,20 +111,33 @@ export default async function DashboardPage() {
             <CardContent>
               {recentActivity.length > 0 ? (
                 <ul className="space-y-3">
-                  {recentActivity.map((item) => (
-                    <li key={item.id} className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">{item.name}</p>
-                          <p className="text-xs text-muted-foreground capitalize">{item.status}</p>
+                  {recentActivity.map((item) => {
+                    const getIcon = () => {
+                      switch (item.entity_type) {
+                        case "equipment": return <Package className="h-4 w-4 text-blue-500" />
+                        case "employee": return <User className="h-4 w-4 text-green-500" />
+                        case "department": return <Building2 className="h-4 w-4 text-purple-500" />
+                        case "category": return <FolderOpen className="h-4 w-4 text-orange-500" />
+                        case "assignment": return <ArrowLeftRight className="h-4 w-4 text-cyan-500" />
+                        case "team_member": return <Mail className="h-4 w-4 text-pink-500" />
+                        default: return <Clock className="h-4 w-4 text-muted-foreground" />
+                      }
+                    }
+                    return (
+                      <li key={item.id} className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0">
+                        <div className="flex items-center gap-2">
+                          {getIcon()}
+                          <div>
+                            <p className="text-sm font-medium">{item.name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{item.action} {item.entity_type}</p>
+                          </div>
                         </div>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(item.updated_at), { addSuffix: true })}
-                      </span>
-                    </li>
-                  ))}
+                        <span className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+                        </span>
+                      </li>
+                    )
+                  })}
                 </ul>
               ) : (
                 <p className="text-sm text-muted-foreground">

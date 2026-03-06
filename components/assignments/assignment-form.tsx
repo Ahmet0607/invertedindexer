@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { logActivity } from "@/lib/activity-log"
 
 interface Equipment {
   id: string
@@ -87,6 +88,16 @@ export function AssignmentForm() {
         notes,
         user_id: user.id,
       })
+
+      // Log activity
+      const equipmentItem = equipment.find(e => e.id === selectedEquipment)
+      const employeeItem = employees.find(e => e.id === selectedEmployee)
+      await logActivity(
+        "assigned",
+        "assignment",
+        `${equipmentItem?.name} to ${employeeItem?.name}`,
+        selectedEquipment
+      )
 
       router.push("/assignments")
       router.refresh()

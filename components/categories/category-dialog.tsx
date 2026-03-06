@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { logActivity } from "@/lib/activity-log"
 
 interface Props {
   children: React.ReactNode
@@ -61,6 +62,14 @@ export function CategoryDialog({ children, category }: Props) {
     } else {
       await supabase.from("categories").insert(data)
     }
+
+    // Log activity
+    await logActivity(
+      category ? "updated" : "added",
+      "category",
+      data.name,
+      category?.id
+    )
 
     setLoading(false)
     setOpen(false)
