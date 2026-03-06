@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, PackageCheck, PackageX, Wrench, AlertTriangle, Search } from "lucide-react"
+import { WarrantyAlerts } from "@/components/dashboard/warranty-alerts"
 
 async function getStats(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never) {
   const { data: equipment } = await supabase.from("equipment").select("status")
@@ -51,6 +52,8 @@ export default async function DashboardPage() {
           ))}
         </div>
 
+        <WarrantyAlerts />
+        
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>

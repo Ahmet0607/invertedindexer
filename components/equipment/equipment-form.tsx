@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Camera, Upload, X, Image as ImageIcon } from "lucide-react"
 
 interface Props {
   categories: { id: string; name: string }[]
@@ -29,6 +30,8 @@ interface Props {
     status: string
     purchase_date: string
     purchase_price: number
+    warranty_expiry: string | null
+    photo_url: string | null
     notes: string | null
   }
 }
@@ -37,6 +40,50 @@ export function EquipmentForm({ categories, departments, equipment }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(equipment?.photo_url || null)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setPhotoFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removePhoto = () => {
+    setPhotoPreview(null)
+    setPhotoFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ""
+    if (cameraInputRef.current) cameraInputRef.current.value = ""
+  }
+
+  const uploadPhoto = async (file: File, userId: string): Promise<string | null> => {
+    const supabase = createClient()
+    const fileExt = file.name.split(".").pop()
+    const fileName = `${userId}/${crypto.randomUUID()}.${fileExt}`
+    
+    const { data, error } = await supabase.storage
+      .from("equipment-photos")
+      .upload(fileName, file)
+    
+    if (error) {
+      console.error("Upload error:", error)
+      return null
+    }
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from("equipment-photos")
+      .getPublicUrl(fileName)
+    
+    return publicUrl
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -53,6 +100,21 @@ export function EquipmentForm({ categories, departments, equipment }: Props) {
       return
     }
 
+    let photoUrl = equipment?.photo_url || null
+    
+    // Upload new photo if selected
+    if (photoFile) {
+      const uploadedUrl = await uploadPhoto(photoFile, user.id)
+      if (uploadedUrl) {
+        photoUrl = uploadedUrl
+      }
+    } else if (!photoPreview && equipment?.photo_url) {
+      // Photo was removed
+      photoUrl = null
+    }
+
+    const warrantyExpiry = formData.get("warranty_expiry") as string
+    
     const data = {
       name: formData.get("name") as string,
       brand: formData.get("brand") as string,
@@ -62,6 +124,8 @@ export function EquipmentForm({ categories, departments, equipment }: Props) {
       status: formData.get("status") as string,
       purchase_date: formData.get("purchase_date") as string,
       purchase_price: parseFloat(formData.get("purchase_price") as string),
+      warranty_expiry: warrantyExpiry || null,
+      photo_url: photoUrl,
       notes: formData.get("notes") || null,
       user_id: user.id,
     }
@@ -92,12 +156,74 @@ export function EquipmentForm({ categories, departments, equipment }: Props) {
         <CardTitle>{equipment ? "Edit Equipment" : "Add New Equipment"}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
               {error}
             </div>
           )}
+
+          {/* Photo Upload Section */}
+          <div className="space-y-3">
+            <Label>Equipment Photo</Label>
+            <div className="flex flex-col items-center gap-4 rounded-lg border-2 border-dashed p-6">
+              {photoPreview ? (
+                <div className="relative">
+                  <img
+                    src={photoPreview}
+                    alt="Equipment preview"
+                    className="h-48 w-48 rounded-lg object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -right-2 -top-2 h-8 w-8"
+                    onClick={removePhoto}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex h-48 w-48 items-center justify-center rounded-lg bg-muted">
+                  <ImageIcon className="h-16 w-16 text-muted-foreground" />
+                </div>
+              )}
+              <div className="flex gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload from Device
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Take Photo
+                </Button>
+              </div>
+            </div>
+          </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -201,6 +327,21 @@ export function EquipmentForm({ categories, departments, equipment }: Props) {
                 defaultValue={equipment?.purchase_price}
                 placeholder="1999.99"
               />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="warranty_expiry">Warranty Expiry Date</Label>
+              <Input
+                id="warranty_expiry"
+                name="warranty_expiry"
+                type="date"
+                defaultValue={equipment?.warranty_expiry || ""}
+              />
+              <p className="text-xs text-muted-foreground">
+                You will be notified 1 month before warranty expires
+              </p>
             </div>
           </div>
 
