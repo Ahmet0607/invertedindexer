@@ -1,5 +1,6 @@
 "use client"
 
+// Equipment table component with filtering and actions
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
