@@ -168,19 +168,36 @@ export function EquipmentForm({ categories, departments, equipment }: Props) {
       }
     }
 
+    const returnDate = formData.get("return_date") as string
+    const currentStatus = formData.get("status") as string
+    
+    // If return date is set, automatically set status to available and clear assignment
+    const finalStatus = returnDate ? "available" : currentStatus
+
     const data = {
       name: formData.get("name") as string,
       brand: formData.get("brand") as string,
       serial_number: serialNumber,
       category_id: formData.get("category_id") || null,
       department_id: formData.get("department_id") || null,
-      status: formData.get("status") as string,
+      status: finalStatus,
       purchase_date: formData.get("purchase_date") as string,
       purchase_price: parseFloat(formData.get("purchase_price") as string),
       warranty_expiry: warrantyExpiry || null,
+      return_date: returnDate || null,
+      assigned_to: returnDate ? null : undefined, // Clear assignment if returning
       photo_url: photoUrl,
       notes: formData.get("notes") || null,
       user_id: user.id,
+    }
+    
+    // If equipment is being returned, update the assignment history
+    if (returnDate && equipment) {
+      await supabase
+        .from("assignment_history")
+        .update({ returned_date: returnDate })
+        .eq("equipment_id", equipment.id)
+        .is("returned_date", null)
     }
 
     let result
@@ -404,6 +421,19 @@ export function EquipmentForm({ categories, departments, equipment }: Props) {
                 You will be notified 1 month before warranty expires
               </p>
             </div>
+            {equipment?.status === "assigned" && (
+              <div className="space-y-2">
+                <Label htmlFor="return_date">Return Date</Label>
+                <Input
+                  id="return_date"
+                  name="return_date"
+                  type="date"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Set a return date to mark equipment as returned and available
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
