@@ -174,7 +174,7 @@ export function EquipmentForm({ categories, departments, equipment }: Props) {
     // If return date is set, automatically set status to available and clear assignment
     const finalStatus = returnDate ? "available" : currentStatus
 
-    const data = {
+    const data: Record<string, unknown> = {
       name: formData.get("name") as string,
       brand: formData.get("brand") as string,
       serial_number: serialNumber,
@@ -184,11 +184,14 @@ export function EquipmentForm({ categories, departments, equipment }: Props) {
       purchase_date: formData.get("purchase_date") as string,
       purchase_price: parseFloat(formData.get("purchase_price") as string),
       warranty_expiry: warrantyExpiry || null,
-      return_date: returnDate || null,
-      assigned_to: returnDate ? null : undefined, // Clear assignment if returning
       photo_url: photoUrl,
       notes: formData.get("notes") || null,
       user_id: user.id,
+    }
+    
+    // Clear assignment if returning
+    if (returnDate) {
+      data.assigned_to = null
     }
     
     // If equipment is being returned, update the assignment history
