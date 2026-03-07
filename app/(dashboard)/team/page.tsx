@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { format } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
@@ -157,11 +158,7 @@ export default function TeamPage() {
   }
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    })
+    return format(new Date(date), "MMM d, yyyy")
   }
 
   const resetDialog = () => {
