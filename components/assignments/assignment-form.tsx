@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -37,6 +38,7 @@ export function AssignmentForm() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [selectedEquipment, setSelectedEquipment] = useState("")
   const [selectedEmployee, setSelectedEmployee] = useState("")
+  const [expectedReturnDate, setExpectedReturnDate] = useState("")
   const [notes, setNotes] = useState("")
 
   useEffect(() => {
@@ -85,6 +87,7 @@ export function AssignmentForm() {
       await supabase.from("assignment_history").insert({
         equipment_id: selectedEquipment,
         employee_id: selectedEmployee,
+        expected_return_date: expectedReturnDate || null,
         notes,
         user_id: user.id,
       })
@@ -151,6 +154,17 @@ export function AssignmentForm() {
             {employees.length === 0 && (
               <p className="text-sm text-muted-foreground">No active employees</p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="expectedReturnDate">Expected Return Date (Optional)</Label>
+            <Input
+              id="expectedReturnDate"
+              type="date"
+              value={expectedReturnDate}
+              onChange={(e) => setExpectedReturnDate(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+            />
           </div>
 
           <div className="space-y-2">

@@ -8,7 +8,11 @@ export default async function AssignmentsPage() {
   const { data: assignments } = await supabase
     .from("assignment_history")
     .select(`
-      *,
+      id,
+      assigned_date,
+      returned_date,
+      expected_return_date,
+      notes,
       equipment:equipment(id, name, serial_number),
       employee:employees(id, name)
     `)
