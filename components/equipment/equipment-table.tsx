@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { format } from "date-fns"
 import { MoreHorizontal, Pencil, Trash2, AlertTriangle, Package } from "lucide-react"
 import {
   Table,
@@ -187,7 +188,7 @@ export function EquipmentTable({ equipment, categories }: Props) {
                           <AlertTriangle className={`h-4 w-4 ${isWarrantyExpired ? 'text-red-500' : 'text-yellow-500'}`} />
                         )}
                         <span className={isWarrantyExpired ? 'text-red-500' : isWarrantyExpiring ? 'text-yellow-600' : ''}>
-                          {warrantyDate.toLocaleDateString()}
+                          {format(warrantyDate, "MMM d, yyyy")}
                         </span>
                       </div>
                     ) : (
